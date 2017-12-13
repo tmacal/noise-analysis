@@ -2,6 +2,7 @@ import os
 import time
 import colorama
 import pyaudio
+import numpy as np
 import speech_recognition as sr
 import sounddevice as sd
 from google.cloud import language
@@ -9,20 +10,37 @@ from google.cloud.language import enums
 from google.cloud.language import types
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="C:\\Users\\Tad\\Desktop\\TargetedAdvertising-dc956f1a9b6b.json"
 from colorama import init, Fore, Back, Style
+from PIL import Image
 
 def sentimentScore(sentiment, text):
     init()
     if -1.0 <= sentiment.score <= -0.25:
         print('\033[91m' + ("Bad: {}".format(text)) + '\033[91m')
         # print (Back.RED + ("Bad: {}".format(text)))
+        array = np.zeros([720, 1080, 3], dtype=np.uint8)
+        array[:, :] = [255, 0, 0]  # 4 = alpha channel
+        imgbad = Image.fromarray(array)
+        imgbad.save('testr.png')
+        imgbad.show()
 
     elif -0.25 <= sentiment.score <= 0.25:
         print('\033[94m' + ("Neutral: {}".format(text)) + '\033[94m')
         # print (Back.CYAN + ("Neutral: {}".format(text)))
+        array = np.zeros([720, 1080, 3], dtype=np.uint8)
+        array[:, :] = [0, 0, 255]  # 4 = alpha channel
+        imgneut = Image.fromarray(array)
+        imgneut.save('testb.png')
+        imgneut.show()
+
 
     elif 0.25 <= sentiment.score <= 1.0:
         print('\033[92m' + ("Good: {}".format(text)) + '\033[92m')
         # print (Back.GREEN + ("Good: {}".format(text)))
+        array = np.zeros([720, 1080, 3], dtype=np.uint8)
+        array[:, :] = [0, 128, 0]  # 4 = alpha channel
+        imgbad = Image.fromarray(array)
+        imgbad.save('testg.png')
+        imgbad.show()
 
 def record():
     r = sr.Recognizer()
