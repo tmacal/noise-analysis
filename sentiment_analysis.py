@@ -1,19 +1,39 @@
 import os
 import sys
-import time
+import pyaudio
 import numpy as np
 import speech_recognition as sr
+import pigpio
 from google.cloud import language
 from google.cloud.language import enums
 from google.cloud.language import types
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="C:\\Users\\Tad\\Desktop\\TargetedAdvertising-dc956f1a9b6b.json"
 from PIL import Image
-# from colorama import init, Fore, Back, Style ## include - init()
-# from pocketsphinx import pocketsphinx
+
+pi = pigpio.pi('tadPi',8888 ) #HOST, PORT
+
+# @reboot         /usr/local/bin/pigpiod
+# Use
+#
+# sudo crontab -e
+#
+# to edit the root crontab and add that line to the end. Then ctrl-o return ctrl-x to exit.
+
+RED_PIN = 13
+GREEN_PIN = 15
+BLUE_PIN = 17
+
+def setRedInten(redVal):
+    pi.set_PWM_dutycycle(RED_PIN, redVal)
+def setGreenInten(greenVal):
+    pi.set_PWM_dutycycle(GREEN_PIN, greenVal)
+def setBlueInten(blueVal):
+    pi.set_PWM_dutycycle(BLUE_PIN, blueVal)
 
 def makeSentimentImg(sentiment, text):
     if -1.0 <= sentiment.score <= -0.25:
         print("\nBad: {}".format(text))
+        setRedInten(255)
         # array = np.zeros([720, 1080, 3], dtype=np.uint8)
         # array[:, :] = [255, 0, 0]  # 4 = alpha channel
         # imgbad = Image.fromarray(array)
@@ -23,6 +43,7 @@ def makeSentimentImg(sentiment, text):
 
     elif -0.25 <= sentiment.score <= 0.25:
         print("\nNeutral: {}".format(text))
+        setBlueInten(255)
         # array = np.zeros([720, 1080, 3], dtype=np.uint8)
         # array[:, :] = [0, 0, 255]  # 4 = alpha channel
         # imgneut = Image.fromarray(array)
@@ -32,6 +53,7 @@ def makeSentimentImg(sentiment, text):
 
     elif 0.25 <= sentiment.score <= 1.0:
         print("\nGood: {}".format(text))
+        setGreenInten(255)
         # array = np.zeros([720, 1080, 3], dtype=np.uint8)
         # array[:, :] = [0, 128, 0]  # 4 = alpha channel
         # imggood = Image.fromarray(array)
@@ -54,9 +76,11 @@ def makeImg(sentimentScr):
 
 def record():
     r = sr.Recognizer()
+    pi = pigpio.pi()
+    if not pi.connected:
+        print('Pi not found')
     try:
         with sr.Microphone(device_index=1) as source:
-            # print('recording...')
             printOver('listening...')
             # r.adjust_for_ambient_noise(source)
             # r.energy_threshold ##edit*
@@ -77,37 +101,28 @@ def record():
                 sentiment = client.analyze_sentiment(document=document).document_sentiment
                 sentimentScr = int(round((sentiment.score + 1) *(255/2)))
                 sentimentMag = int(round((sentiment.score + 1) *(255/2)))
-
-                # print('feeling...')
                 printOver('feeling...')
                 makeSentimentImg(sentiment, text) ##generates and displays image
+                # makeColor(sentimentScr)
                 print('\nSentiment: {}, {}'.format(sentiment.score, sentiment.magnitude))
                 print('SentimentScr: ' + str(sentimentScr))
                 print('SentimentMag: ' + str(sentimentMag))
 
             except Exception as e:
-                print('\nFailed to process sentiment' + str(e))
+                print('\nFailed to process sentiment ' + str(e))
 
         except sr.UnknownValueError:
             print("Google Speech Recognition could not understand audio")
         except sr.RequestError as e:
             print("Could not request results from Google Speech Recognition service; {0}".format(e))
 
-        # try:
-        #     text = r.recognize_sphinx(audio)
-        #     printOver('understood...')
-        # except sr.UnknownValueError:
-        #     print("Sphinx could not understand audio")
-        # except sr.RequestError as e:
-        #     print("Sphinx error; {0}".format(e))
-
     except Exception as e:
-        print('\nSomething went wrong' + str(e)) #general error handler
+        print('\nSomething went wrong ' + str(e)) #general error handler
 
-# #check input devices
-# p = pyaudio.PyAudio()
-# for i in range(p.get_device_count()):
-#     info = p.get_device_info_by_index(i)
-#     print(info['index'], info['name'])
+#check input devices
+p = pyaudio.PyAudio()
+for i in range(p.get_device_count()):
+    info = p.get_device_info_by_index(i)
+    print(info['index'], info['name'])
 while True:
     record()
