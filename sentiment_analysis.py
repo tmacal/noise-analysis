@@ -12,6 +12,7 @@ from PIL import Image
 
 pi = pigpio.pi('tadPi',8888 ) #HOST, PORT
 
+##set up pigpio daemon on raspberryPi
 # @reboot         /usr/local/bin/pigpiod
 # Use
 #
