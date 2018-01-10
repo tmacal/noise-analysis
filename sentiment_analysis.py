@@ -3,14 +3,14 @@ import sys
 import pyaudio
 import numpy as np
 import speech_recognition as sr
+import subprocess as sp
 import pigpio
+from googleads import adwords
 from google.cloud import language
 from google.cloud.language import enums
 from google.cloud.language import types
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="C:\\Users\\Tad\\Desktop\\TargetedAdvertising-dc956f1a9b6b.json"
 from PIL import Image
-
-pi = pigpio.pi('tadPi',8888 ) #HOST, PORT
 
 ##set up pigpio daemon on raspberryPi
 # @reboot         /usr/local/bin/pigpiod
@@ -19,6 +19,10 @@ pi = pigpio.pi('tadPi',8888 ) #HOST, PORT
 # sudo crontab -e
 #
 # to edit the root crontab and add that line to the end. Then ctrl-o return ctrl-x to exit.
+ip = "192.168.1.10"
+
+pi = pigpio.pi(ip, 8888) #HOST, PORT
+print(pi.connected)
 
 RED_PIN = 13
 GREEN_PIN = 15
@@ -30,6 +34,14 @@ def setGreenInten(greenVal):
     pi.set_PWM_dutycycle(GREEN_PIN, greenVal)
 def setBlueInten(blueVal):
     pi.set_PWM_dutycycle(BLUE_PIN, blueVal)
+
+def ipcheck():
+    status, result = sp.getstatusoutput('ping ' + ip)
+    if status == 0:
+        print('tadPi@ ' + ip + ' is UP')
+        print(result)
+    else:
+        print('tadPi@ ' + ip + ' is DOWN')
 
 def makeSentimentImg(sentiment, text):
     if -1.0 <= sentiment.score <= -0.25:
@@ -77,11 +89,8 @@ def makeImg(sentimentScr):
 
 def record():
     r = sr.Recognizer()
-    pi = pigpio.pi()
-    if not pi.connected:
-        print('Pi not found')
     try:
-        with sr.Microphone(device_index=1) as source:
+        with sr.Microphone(device_index=1, sample_rate = 48000) as source:
             printOver('listening...')
             # r.adjust_for_ambient_noise(source)
             # r.energy_threshold ##edit*
@@ -120,10 +129,12 @@ def record():
     except Exception as e:
         print('\nSomething went wrong ' + str(e)) #general error handler
 
-#check input devices
+#system and input devices check
+ipcheck()
 p = pyaudio.PyAudio()
 for i in range(p.get_device_count()):
     info = p.get_device_info_by_index(i)
     print(info['index'], info['name'])
+
 while True:
     record()
