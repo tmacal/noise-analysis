@@ -23,17 +23,24 @@ ip = "192.168.1.10"
 
 pi = pigpio.pi(ip, 8888) #HOST, PORT
 print(pi.connected)
-
-RED_PIN = 13
-GREEN_PIN = 15
-BLUE_PIN = 17
+RED_PIN = 10
+GREEN_PIN = 9
+BLUE_PIN = 11
 
 def setRedInten(redVal):
     pi.set_PWM_dutycycle(RED_PIN, redVal)
+    pi.write(10, 1)
+    pi.write(9, 0)
+    pi.write(11, 0)
 def setGreenInten(greenVal):
-    pi.set_PWM_dutycycle(GREEN_PIN, greenVal)
+    pi.write(9, 1)
+    pi.write(10, 0)
+    pi.write(11, 0)
 def setBlueInten(blueVal):
     pi.set_PWM_dutycycle(BLUE_PIN, blueVal)
+    pi.write(11, 1)
+    pi.write(9, 0)
+    pi.write(10, 0)
 
 def ipcheck():
     status, result = sp.getstatusoutput('ping ' + ip)
@@ -51,8 +58,8 @@ def makeSentimentImg(sentiment, text):
         # array[:, :] = [255, 0, 0]  # 4 = alpha channel
         # imgbad = Image.fromarray(array)
         # imgbad.save('testr.png')
-        imgbad = Image.open('testr.png')
-        imgbad.show()
+        # imgbad = Image.open('testr.png')
+        # imgbad.show()
 
     elif -0.25 <= sentiment.score <= 0.25:
         print("\nNeutral: {}".format(text))
@@ -61,8 +68,8 @@ def makeSentimentImg(sentiment, text):
         # array[:, :] = [0, 0, 255]  # 4 = alpha channel
         # imgneut = Image.fromarray(array)
         # imgneut.save('testb.png')
-        imgneut = Image.open('testb.png')
-        imgneut.show()
+        # imgneut = Image.open('testb.png')
+        # imgneut.show()
 
     elif 0.25 <= sentiment.score <= 1.0:
         print("\nGood: {}".format(text))
@@ -72,7 +79,7 @@ def makeSentimentImg(sentiment, text):
         # imggood = Image.fromarray(array)
         # imggood.save('testg.png')
         imggood = Image.open('testg.png')
-        imggood.show()
+        # imggood.show()
 
 def printOver(str):
     sys.stdout.write("\r" + (str))
