@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import socket
 import pyaudio
 import turtle
@@ -11,10 +12,10 @@ from google.cloud.language import enums
 from google.cloud.language import types
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "C:\\Users\\Tad\\Desktop\\TargetedAdvertising-dc956f1a9b6b.json"
+timestr = time.strftime("%Y%m%d-%H%M%S")
 
 ip = "192.168.1.10"
 pi = pigpio.pi(ip, 8888)  # HOST, PORT
-print(pi.connected)
 RED_PIN = 10
 GREEN_PIN = 9
 BLUE_PIN = 11
@@ -57,18 +58,17 @@ def hostcheck():
 
 def changeSentimentColor(sentiment, text):
     if -1.0 <= sentiment.score <= -0.25:
-        print("\nBad: {}".format(text))
         setRedInten(255)
     if -0.25 <= sentiment.score <= 0.25:
-        print("\nNeutral: {}".format(text))
         setBlueInten(255)
     if 0.25 <= sentiment.score <= 1.0:
-        print("\nGood: {}".format(text))
         setGreenInten(255)
 
 
-def createTkImage(sentiment):
-    turtle.screensize(canvwidth=None, canvheight=None, bg=None)
+def createTkImage(sentiment, text):
+    turtle.screensize()
+    turtle.setup(width=1.0, height=1.0)
+    turtle.bgcolor("black")
     turtle.reset()
     turtle.up()
     turtle.goto(0, -100)
@@ -79,6 +79,7 @@ def createTkImage(sentiment):
     turtle.end_fill()
     # drawSmile
     if 0.25 <= sentiment.score <= 1.0:
+        print("\nGood: {}".format(text))
         turtle.up()
         turtle.goto(-67, -40)
         turtle.setheading(-60)
@@ -87,6 +88,7 @@ def createTkImage(sentiment):
         turtle.circle(80, 120)
     # drawSad
     if -1.0 <= sentiment.score <= -0.25:
+        print("\nBad: {}".format(text))
         turtle.up()
         turtle.goto(-67, -40)
         turtle.setheading(-120)
@@ -95,6 +97,7 @@ def createTkImage(sentiment):
         turtle.circle(80, -120)
     # drawNeutral
     if -0.25 <= sentiment.score <= 0.25:
+        print("\nNeutral: {}".format(text))
         turtle.up()
         turtle.goto(-67, -40)
         turtle.width(5)
@@ -126,7 +129,6 @@ def record():
         with sr.Microphone(device_index=1, sample_rate=48000) as source:
             r.adjust_for_ambient_noise(source)
             printOver('listening...')
-            # r.energy_threshold()
             audio = r.listen(source)
 
         try:
@@ -145,14 +147,13 @@ def record():
                 sentimentScr = int(round((sentiment.score + 1) * (255 / 2)))
                 sentimentMag = int(round((sentiment.magnitude + 1) * (255 / 2)))
                 printOver('feeling...')
-                print('\nSentiment: {}, {}'.format(sentiment.score, sentiment.magnitude))
-                print('SentimentScr: ' + str(sentimentScr))
-                print('SentimentMag: ' + str(sentimentMag))
-                print(entities)
+                # print('\nSentiment: {}, {}'.format(sentiment.score, sentiment.magnitude))
+                with open("Speech2mood_log" + timestr + ".txt", "a") as text_file:
+                    text_file.write('Res: ' + timestr + str(document)+ str(sentimentScr) + str(sentimentMag) + str(entities))
 
                 try:
                     # changeSentimentColor(sentiment, text)
-                    createTkImage(sentiment)
+                    createTkImage(sentiment, text)
                 except Exception as e:
                     print("\nCouldn't create image " + str(e))
 
