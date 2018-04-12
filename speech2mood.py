@@ -3,6 +3,7 @@ import sys
 import time
 import socket
 import pyaudio
+import datetime
 import turtle
 import speech_recognition as sr
 import subprocess as sp
@@ -13,6 +14,7 @@ from google.cloud.language import types
 
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "C:\\Users\\Tad\\Desktop\\TargetedAdvertising-dc956f1a9b6b.json"
 timestr = time.strftime("%Y%m%d-%H%M%S")
+endTime = datetime.datetime.now() + datetime.timedelta(minutes=5)
 
 ip = "192.168.1.10"
 pi = pigpio.pi(ip, 8888)  # HOST, PORT
@@ -21,6 +23,27 @@ GREEN_PIN = 9
 BLUE_PIN = 11
 
 
+def printOver(str):
+    sys.stdout.write("\r" + (str))
+    sys.stdout.flush()
+
+
+## HELPER METHODS / OBJECTS ##
+def hostcheck():
+    try:
+        status, result = sp.getstatusoutput('ping ' + ip)
+        hostname = socket.gethostbyaddr(ip)
+        print(hostname)
+        if status == 0 and "pi" in hostname:
+            print('tadPi@ ' + ip + ' is UP')
+            print(result)
+        else:
+            print('tadPi@ ' + ip + ' is DOWN')
+    except Exception as e:
+        print("\nCouldn't contact host " + str(e))
+
+
+## OUTPUT FUCNTIONS ##
 def setRedInten(redVal):
     pi.set_PWM_dutycycle(RED_PIN, redVal)
     pi.write(10, 1)
@@ -42,21 +65,7 @@ def setBlueInten(blueVal):
     pi.write(10, 0)
 
 
-def hostcheck():
-    try:
-        status, result = sp.getstatusoutput('ping ' + ip)
-        hostname = socket.gethostbyaddr(ip)
-        print(hostname)
-        if status == 0 and "pi" in hostname:
-            print('tadPi@ ' + ip + ' is UP')
-            print(result)
-        else:
-            print('tadPi@ ' + ip + ' is DOWN')
-    except Exception as e:
-        print("\nCouldn't contact host " + str(e))
-
-
-def changeSentimentColor(sentiment, text):
+def changeSentimentColor(sentiment):
     if -1.0 <= sentiment.score <= -0.25:
         setRedInten(255)
     if -0.25 <= sentiment.score <= 0.25:
@@ -118,15 +127,12 @@ def createTkImage(sentiment, text):
     turtle.hideturtle()
 
 
-def printOver(str):
-    sys.stdout.write("\r" + (str))
-    sys.stdout.flush()
-
-
+## MAIN FUNCTION ##
 def record():
     r = sr.Recognizer()
     try:
         with sr.Microphone(device_index=1, sample_rate=48000) as source:
+            printOver('adjust_for_ambient_noise')
             r.adjust_for_ambient_noise(source)
             printOver('listening...')
             audio = r.listen(source)
@@ -147,12 +153,12 @@ def record():
                 sentimentScr = int(round((sentiment.score + 1) * (255 / 2)))
                 sentimentMag = int(round((sentiment.magnitude + 1) * (255 / 2)))
                 printOver('feeling...')
-                # print('\nSentiment: {}, {}'.format(sentiment.score, sentiment.magnitude))
                 with open("Speech2mood_log" + timestr + ".txt", "a") as text_file:
-                    text_file.write('Res: ' + timestr + str(document)+ str(sentimentScr) + str(sentimentMag) + str(entities))
+                    text_file.write(timestr + 'Res: ' + str(document) + str(entities))
+                    text_file.write('\nSentiment: {}, {}'.format(sentiment.score, sentiment.magnitude))
 
                 try:
-                    # changeSentimentColor(sentiment, text)
+                    # changeSentimentColor(sentiment, text) ##changes light colour
                     createTkImage(sentiment, text)
                 except Exception as e:
                     print("\nCouldn't create image " + str(e))
@@ -169,7 +175,7 @@ def record():
         print('\nSomething went wrong ' + str(e))
 
 
-# system and input devices check
+## SYSTEM / INPUT DEVICES CHECK ##
 hostcheck()
 p = pyaudio.PyAudio()
 for i in range(p.get_device_count()):
@@ -178,3 +184,5 @@ for i in range(p.get_device_count()):
 
 while True:
     record()
+    if datetime.datetime.now() >= endTime:  ##endTime set to 5minutes
+        continue
