@@ -63,15 +63,9 @@ def record():
                     type=enums.Document.Type.PLAIN_TEXT)
                 client = language.LanguageServiceClient()
                 printOver('interpreting...')
-                ser.write("processing".encode('utf-8'))
                 sentiment = client.analyze_sentiment(document=document).document_sentiment
                 entities = client.analyze_entities(document=document)
                 printOver('feeling...')
-                ser.write("processing".encode('utf-8'))
-                with open("Speech2mood_log" + timestr + ".txt", "a") as text_file:
-                    text_file.write(timestr + 'Res: ' + str(document) + str(entities))
-                    text_file.write('\nSentiment: {}, {}'.format(sentiment.score, sentiment.magnitude))
-
                 try:
                     serialPipe(sentiment, text)
                 except Exception as e:
