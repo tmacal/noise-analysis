@@ -62,8 +62,8 @@ def record():
                     content=text,
                     type=enums.Document.Type.PLAIN_TEXT)
                 client = language.LanguageServiceClient()
-
                 printOver('interpreting...')
+                ser.write("interpreting".encode('utf-8'))
                 sentiment = client.analyze_sentiment(document=document).document_sentiment
                 entities = client.analyze_entities(document=document)
                 printOver('feeling...')
